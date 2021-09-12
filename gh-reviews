@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+template='{{range(pluck "node" .data.search.edges) -}}
+{{tablerow (printf "#%v" .number | autocolor "green") .title (.author.login | autocolor "red") (.reviewDecision | autocolor "yellow") (.url | autocolor "cyan") -}}
+{{end -}}
+{{tablerender}}'
+
+query='query {
+    search(query: "is:open is:pr review-requested:@me", type: ISSUE, first: 100) {
+        edges {
+            node {
+                ... on PullRequest {
+                    number
+                    title
+                    author {
+                        login
+                        ... on User {
+                            name
+                        }
+                        
+                    }
+                    reviewDecision
+                    url
+                }
+            }
+        }
+    }
+}'
+
+exec gh api graphql --paginate -f query="$query" -t "$template"
